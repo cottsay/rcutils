@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
+#include "rcutils/error_handling.h"
 #include "rcutils/filesystem.h"
 #include "rcutils/get_env.h"
 
@@ -437,6 +438,7 @@ TEST_F(TestFilesystemFixture, calculate_directory_size) {
     fs.exhaust_file_descriptors();
     size = rcutils_calculate_directory_size(path, g_allocator);
     EXPECT_EQ(0u, size);
+    rcutils_reset_error();
   }
 }
 
@@ -464,4 +466,40 @@ TEST_F(TestFilesystemFixture, calculate_file_size) {
   {
     g_allocator.deallocate(non_existing_path, g_allocator.state);
   });
+}
+
+TEST_F(TestFilesystemFixture, directory_iterator) {
+  char * path =
+    rcutils_join_path(this->test_path, "dummy_folder", g_allocator);
+  OSRF_TESTING_TOOLS_CPP_SCOPE_EXIT(
+  {
+    g_allocator.deallocate(path, g_allocator.state);
+  });
+
+  rcutils_dir_iter_t * iter = rcutils_dir_iter_start(path, g_allocator);
+  ASSERT_NE(nullptr, iter);
+  OSRF_TESTING_TOOLS_CPP_SCOPE_EXIT(
+  {
+    rcutils_dir_iter_end(iter);
+  });
+
+  EXPECT_STREQ("dummy.dummy", iter->entry_name);
+  ASSERT_TRUE(rcutils_dir_iter_next(iter));
+  EXPECT_STREQ(".", iter->entry_name);
+  ASSERT_TRUE(rcutils_dir_iter_next(iter));
+  EXPECT_STREQ("..", iter->entry_name);
+  ASSERT_FALSE(rcutils_dir_iter_next(iter));
+  EXPECT_EQ(nullptr, iter->entry_name);
+}
+
+TEST_F(TestFilesystemFixture, directory_iterator_non_existing) {
+  char * path =
+    rcutils_join_path(this->test_path, "non_existing_folder", g_allocator);
+  OSRF_TESTING_TOOLS_CPP_SCOPE_EXIT(
+  {
+    g_allocator.deallocate(path, g_allocator.state);
+  });
+
+  EXPECT_EQ(nullptr, rcutils_dir_iter_start(path, g_allocator));
+  rcutils_reset_error();
 }

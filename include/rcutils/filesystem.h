@@ -27,6 +27,13 @@ extern "C"
 #include "rcutils/macros.h"
 #include "rcutils/visibility_control.h"
 
+typedef struct rcutils_dir_iter_t
+{
+  const char * entry_name;
+  rcutils_allocator_t allocator;
+  void * state;
+} rcutils_dir_iter_t;
+
 /// Return current working directory.
 /**
  * \param[in] buffer Allocated string to store current directory path to
@@ -204,6 +211,18 @@ rcutils_calculate_directory_size(const char * directory_path, rcutils_allocator_
 RCUTILS_PUBLIC
 size_t
 rcutils_get_file_size(const char * file_path);
+
+RCUTILS_PUBLIC
+rcutils_dir_iter_t *
+rcutils_dir_iter_start(const char * directory_path, const rcutils_allocator_t allocator);
+
+RCUTILS_PUBLIC
+bool
+rcutils_dir_iter_next(rcutils_dir_iter_t * iter);
+
+RCUTILS_PUBLIC
+void
+rcutils_dir_iter_end(rcutils_dir_iter_t * iter);
 
 #ifdef __cplusplus
 }
